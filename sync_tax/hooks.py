@@ -95,13 +95,21 @@ app_license = "MIT"
 # ---------------
 # Hook on document methods and events
 
-# doc_events = {
-#	"*": {
-#		"on_update": "method",
-#		"on_cancel": "method",
-#		"on_trash": "method"
-#	}
-# }
+doc_events = {
+	# "*": {
+	# 	"on_update": "method",
+	# 	"on_cancel": "method",
+	# 	"on_trash": "method"
+	# }
+	"Sync Log" :{
+		"after_insert": "sync_tax.sync_tax.doctype.sync_log.sync_log.after_insert"
+	}, 
+	("Sales Order",'Purchase Order','Delivery Note', 'Stock Entry','Purchase Receipt', 'Purchase Invoice', 'Sales Invoice', 'Payment Entry', 'Journal Entry', 'Stock Reconciliation', 'Material Request'): {
+		"on_submit": "sync_tax.custom.sync.create_sync_log",
+		"on_cancel": "sync_tax.custom.sync.cancel_sync_log",
+		"on_trash": "sync_tax.custom.sync.delete_sync_log",
+	}
+}
 
 # Scheduled Tasks
 # ---------------
