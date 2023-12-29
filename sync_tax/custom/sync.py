@@ -3,10 +3,12 @@ import frappe
 import json
 import frappe.utils
 
-from datetime import date
+from datetime import date,datetime
 
 from frappe.frappeclient import FrappeClient
 
+from frappe.model.naming import set_name_by_naming_series
+from frappe.utils import cint, flt, getdate, add_days, cstr, nowdate, get_link_to_form, formatdate
 @frappe.whitelist()
 def repair_gl_sle_entry(doctype, docname):
     docu = frappe.get_doc(doctype, docname)
@@ -34,7 +36,11 @@ def repair_gl_sle_entry(doctype, docname):
     frappe.db.commit()
 
 def create_sync_log(self, method):
-    if self.doctype == 'Material Request':
+    # if self.doctype == 'Material Request':
+    tanggal = self.get("transaction_date") or self.get("posting_date")
+    cek = '2023-12-31'
+    tanggal_objek = datetime.strptime(cek, '%Y-%m-%d').date()
+    if self.doctype == 'Period Closing Voucher' and (tanggal > tanggal_objek or tanggal > tanggal_objek):
         cek_apakah_sumber = frappe.db.sql(""" SELECT * FROM `tabEvent Consumer` """)
         # frappe.msgprint(str(cek_apakah_sumber)+"tes123")
         if len(cek_apakah_sumber) > 0:
@@ -46,7 +52,7 @@ def create_sync_log(self, method):
             # self.amended_from = ""
             doc.data = frappe.as_json(self)
             doc.save()
-    elif self.tax_status=='Tax':
+    elif self.tax_status=='Tax' and (tanggal > tanggal_objek or tanggal > tanggal_objek):
         cek_apakah_sumber = frappe.db.sql(""" SELECT * FROM `tabEvent Consumer` """)        
         # frappe.msgprint(str(cek_apakah_sumber)+"tes123")
         if len(cek_apakah_sumber) > 0:
@@ -60,8 +66,12 @@ def create_sync_log(self, method):
             doc.save()
 
 def cancel_sync_log(self, method):
+    tanggal = self.get("transaction_date") or self.get("posting_date")
+    cek = '2023-12-31'
+    tanggal_objek = datetime.strptime(cek, '%Y-%m-%d').date()
     cek_apakah_sumber = frappe.db.sql(""" SELECT * FROM `tabEvent Consumer` """)
-    if self.doctype == 'Material Request':
+    # if self.doctype == 'Material Request':
+    if self.doctype == 'Period Closing Voucher' and (tanggal > tanggal_objek or tanggal > tanggal_objek):
         if len(cek_apakah_sumber) > 0:            
             doc = frappe.new_doc('Sync Log')
             doc.update_type = 'Cancel'
@@ -69,7 +79,7 @@ def cancel_sync_log(self, method):
             doc.docname = self.name
             doc.data = frappe.as_json(self)
             doc.save()
-    elif self.tax_status=='Tax':
+    elif self.tax_status=='Tax' and (tanggal > tanggal_objek or tanggal > tanggal_objek):
         if len(cek_apakah_sumber) > 0:            
             doc = frappe.new_doc('Sync Log')
             doc.update_type = 'Cancel'
@@ -79,8 +89,13 @@ def cancel_sync_log(self, method):
             doc.save()
 
 def delete_sync_log(self, method):
+    tanggal = self.get("transaction_date") or self.get("posting_date")
+    tanggal = self.get("transaction_date") or self.get("posting_date")
+    cek = '2023-12-31'
+    tanggal_objek = datetime.strptime(cek, '%Y-%m-%d').date()
     cek_apakah_sumber = frappe.db.sql(""" SELECT * FROM `tabEvent Consumer` """)
-    if self.doctype == 'Material Request':                
+    # if self.doctype == 'Material Request':                
+    if self.doctype == 'Period Closing Voucher' and (tanggal > tanggal_objek or tanggal > tanggal_objek):
         if len(cek_apakah_sumber) > 0:            
             doc = frappe.new_doc('Sync Log')
             doc.update_type = 'Delete'
@@ -88,7 +103,7 @@ def delete_sync_log(self, method):
             doc.docname = self.name
             doc.data = frappe.as_json(self)
             doc.save()
-    elif self.tax_status=='Tax':
+    elif self.tax_status=='Tax' and (tanggal > tanggal_objek or tanggal > tanggal_objek):
         if len(cek_apakah_sumber) > 0:            
             doc = frappe.new_doc('Sync Log')
             doc.update_type = 'Delete'
@@ -735,4 +750,237 @@ def repair_stock_ledger():
             })
 
     frappe.db.sql(""" UPDATE `tabSingles` SET value = 0 WHERE field = "allow_negative_stock" """)
+@frappe.whitelist()
+def cek_status_pajak(self,method):
+    if self.doctype == 'Purchase Order':
+        if self.tax_status == 'Tax':
+            for i in self.items:
+                if i.material_request not in ['',None] and '-NP-' in i.material_request:
+                    frappe.throw("Tidak Boleh Ada doc Non Pajak !")
+                elif i.sales_order not in ['',None] and '-NP-' in i.sales_order:
+                    frappe.throw("Tidak Boleh Ada doc Non Pajak !")
+        elif self.tax_status == 'Non Tax':
+            for i in self.items:
+                if i.material_request not in ['',None] and '-P-' in i.material_request:
+                    frappe.throw("Tidak Boleh Ada doc Pajak !")
+                elif i.sales_order not in ['',None] and '-P-' in i.sales_order:
+                    frappe.throw("Tidak Boleh Ada doc Pajak !")
+    
+    elif self.doctype == 'Delivery Note':
+        if self.tax_status == 'Tax':
+            for i in self.items:
+                if i.against_sales_order not in ['',None] and '-NP-' in i.against_sales_order:
+                    frappe.throw("Tidak Boleh Ada doc Non Pajak !")
+                elif i.against_sales_invoice not in ['',None] and '-N-' in i.against_sales_invoice:
+                    frappe.throw("Tidak Boleh Ada doc Non Pajak !")
+        elif self.tax_status == 'Non Tax':
+            for i in self.items:
+                if i.against_sales_order not in ['',None] and '-P-' in i.against_sales_order:
+                    frappe.throw("Tidak Boleh Ada doc Pajak !")
+                elif i.against_sales_invoice not in ['',None] and '-P-' in i.against_sales_invoice:
+                    frappe.throw("Tidak Boleh Ada doc Pajak !")
+
+    elif self.doctype == 'Stock Entry':
+        if self.tax_status == 'Tax':
+            if self.credit_note not in ['',None] and '-N-' in self.credit_note:
+                frappe.throw("Tidak Boleh Ada doc Non Pajak !")
+            for i in self.items:
+                if i.material_request not in ['',None] and '-NP-' in i.material_request:
+                    frappe.throw("Tidak Boleh Ada doc Non Pajak !")
+                elif i.against_stock_entry not in ['',None] and '-NP-' in i.against_stock_entry:
+                    frappe.throw("Tidak Boleh Ada doc Non Pajak !")
+                elif i.reference_purchase_receipt not in ['',None] and '-NP-' in i.reference_purchase_receipt:
+                    frappe.throw("Tidak Boleh Ada doc Non Pajak !")
+        elif self.tax_status == 'Non Tax':
+            if self.credit_note not in ['',None] and 'P' in self.credit_note:
+                frappe.throw("Tidak Boleh Ada doc Non Pajak !")
+            for i in self.items:
+                if i.material_request not in ['',None] and '-P-' in i.material_request:
+                    frappe.throw("Tidak Boleh Ada doc Pajak !")
+                elif i.against_stock_entry not in ['',None] and '-P-' in i.against_stock_entry:
+                    frappe.throw("Tidak Boleh Ada doc Pajak !")
+                elif i.reference_purchase_receipt not in ['',None] and '-P-' in i.reference_purchase_receipt:
+                    frappe.throw("Tidak Boleh Ada doc Pajak !")
+
+    elif self.doctype == 'Purchase Receipt':
+        if self.tax_status == 'Tax':
+            if self.inter_company_reference not in ['',None] and '-N-' in self.inter_company_reference:
+                frappe.throw("Tidak Boleh Ada doc Non Pajak !")
+            elif self.return_against not in ['',None] and '-NP-' in self.return_against:
+                frappe.throw("Tidak Boleh Ada doc Non Pajak !")
+            
+            for i in self.items:
+                if i.material_request not in ['',None] and '-NP-' in i.material_request:
+                    frappe.throw("Tidak Boleh Ada doc Non Pajak !")
+                elif i.purchase_order not in ['',None] and '-NP-' in i.purchase_order:
+                    frappe.throw("Tidak Boleh Ada doc Non Pajak !")
+                elif i.purchase_invoice not in ['',None] and '-NP-' in i.purchase_invoice:
+                    frappe.throw("Tidak Boleh Ada doc Non Pajak !")
+        elif self.tax_status == 'Non Tax':
+            if self.inter_company_reference not in ['',None] and '-P-' in self.inter_company_reference:
+                frappe.throw("Tidak Boleh Ada doc Non Pajak !")
+            elif self.return_against not in ['',None] and '-P-' in self.return_against:
+                frappe.throw("Tidak Boleh Ada doc Non Pajak !")
+            
+            for i in self.items:
+                if i.material_request not in ['',None] and '-P-' in i.material_request:
+                    frappe.throw("Tidak Boleh Ada doc Pajak !")
+                elif i.purchase_order not in ['',None] and '-P-' in i.purchase_order:
+                    frappe.throw("Tidak Boleh Ada doc Pajak !")
+                elif i.purchase_invoice not in ['',None] and '-P-' in i.purchase_invoice:
+                    frappe.throw("Tidak Boleh Ada doc Pajak !")
+
+    elif self.doctype == 'Purchase Invoice':
+        if self.tax_status == 'Tax':
+            if self.inter_company_invoice_reference not in ['',None] and '-N-' in self.inter_company_invoice_reference:
+                frappe.throw("Tidak Boleh Ada doc Non Pajak !")
+            elif self.return_against not in ['',None] and '-NP-' in self.return_against:
+                frappe.throw("Tidak Boleh Ada doc Non Pajak !")
+
+            for i in self.items:
+                if i.purchase_order not in ['',None] and '-N' in i.purchase_order:
+                    frappe.throw("Tidak Boleh Ada doc Non Pajak !")
+                elif i.purchase_receipt not in ['',None] and '-N' in i.purchase_receipt:
+                    frappe.throw("Tidak Boleh Ada doc Non Pajak !")
+            for i in self.advances:
+                if i.reference_name not in ['',None] and 'N' in i.reference_name:
+                    frappe.throw("Tidak Boleh Ada doc Non Pajak !")
+            for i in self.advance_tax:
+                if i.reference_name not in ['',None] and '-N' in i.reference_name:
+                    frappe.throw("Tidak Boleh Ada doc Non Pajak !")
+        elif self.tax_status == 'Non Tax':
+            if self.inter_company_invoice_reference not in ['',None] and '-P-' in self.inter_company_invoice_reference:
+                frappe.throw("Tidak Boleh Ada doc Pajak !")
+            elif self.return_against not in ['',None] and '-P-' in self.return_against:
+                frappe.throw("Tidak Boleh Ada doc Pajak !")
+
+            for i in self.items:
+                if i.purchase_order not in ['',None] and '-P-' in i.purchase_order:
+                    frappe.throw("Tidak Boleh Ada doc Pajak !")
+                elif i.purchase_receipt not in ['',None] and '-P-' in i.purchase_receipt:
+                    frappe.throw("Tidak Boleh Ada doc Pajak !")
+            for i in self.advances:
+                if i.reference_name not in ['',None] and '-P-' in i.reference_name:
+                    frappe.throw("Tidak Boleh Ada doc Pajak !")
+            for i in self.advance_tax:
+                if i.reference_name not in ['',None] and '-P-' in i.reference_name:
+                    frappe.throw("Tidak Boleh Ada doc Pajak !")
+    
+    elif self.doctype == 'Sales Invoice':
+        if self.tax_status == 'Tax':
+            if self.return_against not in ['',None] and '-N' in self.return_against:
+                frappe.throw("Tidak Boleh Ada doc Non Pajak !")
+            
+            for i in self.items:
+                if i.sales_order not in ['',None] and '-N' in i.sales_order:
+                    frappe.throw("Tidak Boleh Ada doc Non Pajak !")
+                elif i.delivery_note not in ['',None] and '-N' in i.delivery_note:
+                    frappe.throw("Tidak Boleh Ada doc Non Pajak !")
+            for i in self.advances:
+                if i.reference_name not in ['',None] and '-N' in i.reference_name:
+                    frappe.throw("Tidak Boleh Ada doc Non Pajak !")
+        elif self.tax_status == 'Non Tax':
+            if self.return_against not in ['',None] and '-P-' in self.return_against:
+                frappe.throw("Tidak Boleh Ada doc Pajak !")
+            
+            for i in self.items:
+                if i.sales_order not in ['',None] and '-P-' in i.sales_order:
+                    frappe.throw("Tidak Boleh Ada doc Pajak !")
+                elif i.delivery_note not in ['',None] and '-P-' in i.delivery_note:
+                    frappe.throw("Tidak Boleh Ada doc Pajak !")
+            for i in self.advances:
+                if i.reference_name not in ['',None] and '-P-' in i.reference_name:
+                    frappe.throw("Tidak Boleh Ada doc Pajak !")
+
+    elif self.doctype == 'Payment Entry':
+        if self.tax_status == 'Tax':
+            for i in self.references:
+                if i.reference_name not in ['',None] and '-N' in i.reference_name:
+                    frappe.throw("Tidak Boleh Ada doc Non Pajak !")
+        elif self.tax_status == 'Non Tax':
+            for i in self.references:
+                if i.reference_name not in ['',None] and '-P-' in i.reference_name:
+                    frappe.throw("Tidak Boleh Ada doc Pajak !")
+
+    elif self.doctype == 'Journal Entry':
+        if self.tax_status == 'Tax':
+            if self.inter_company_journal_entry_reference not in ['',None] and '-N' in self.inter_company_journal_entry_reference:
+                frappe.throw("Tidak Boleh Ada doc Non Pajak !")
+            elif self.stock_entry not in ['',None] and '-N' in self.stock_entry:
+                frappe.throw("Tidak Boleh Ada doc Non Pajak !")
+
+            for i in self.accounts:
+                if i.reference_type in ['Sales Invoice','Purchase Invoice','Journal Entry','Sales Order','Purchase Order']:
+                    if i.reference_name not in ['',None] and '-N' in i.reference_name:
+                        frappe.throw("Tidak Boleh Ada doc Non Pajak !")
+        elif self.tax_status == 'Non Tax':
+            if self.inter_company_journal_entry_reference not in ['',None] and '-P-' in self.inter_company_journal_entry_reference:
+                frappe.throw("Tidak Boleh Ada doc Pajak !")
+            elif self.stock_entry not in ['',None] and '-P-' in self.stock_entry:
+                frappe.throw("Tidak Boleh Ada doc Pajak !")
+
+            for i in self.accounts:
+                if i.reference_type in ['Sales Invoice','Purchase Invoice','Journal Entry','Sales Order','Purchase Order']:
+                    if i.reference_name not in ['',None] and '-P-' in i.reference_name:
+                        frappe.throw("Tidak Boleh Ada doc Pajak !")
+  
+@frappe.whitelist()
+def cek_tax_status(self,method):
+    if self.doctype == 'Material Request':
+        if self.tax_status == 'Tax':
+            self.naming_series = 'MAT-MR-P-.YYYY.-'
+        elif self.tax_status == 'Non Tax':
+            self.naming_series = 'MAT-MR-NP-.YYYY.-'
+    elif self.doctype == 'Sales Order':
+        if self.tax_status == 'Tax':
+            self.naming_series = 'SO-P-.YY.MM.DD.-.#####'
+        elif self.tax_status == 'Non Tax':
+            self.naming_series = 'SO-NP-.YY.MM.DD.-.#####'
+    elif self.doctype == 'Purchase Order':
+        if self.tax_status == 'Tax':
+            self.naming_series = 'PUR-ORD-P-.YYYY.-'
+        elif self.tax_status == 'Non Tax':
+            self.naming_series = 'PUR-ORD-NP-.YYYY.-'
+    elif self.doctype == 'Delivery Note':
+        if self.tax_status == 'Tax':
+            self.naming_series = 'SJ-P-.YY.-.MM.-.#####'
+        elif self.tax_status == 'Non Tax':
+            self.naming_series = 'SJ-N-.YY.-.MM.-.#####'
+    elif self.doctype == 'Stock Entry':
+        if self.tax_status == 'Tax' and self.jenis_transaksi != 'Stock Awal':
+            self.naming_series = 'MAT-STE-P-.YYYY.-'
+        elif self.tax_status == 'Non Tax':
+            self.naming_series = 'MAT-STE-NP-.YYYY.-'
+        elif self.tax_status == 'Tax' and self.jenis_transaksi == 'Stock Awal':
+            self.naming_series = 'MAT-STE-.YYYY.-'
+    elif self.doctype == 'Purchase Receipt':
+        if self.tax_status == 'Tax':
+            self.naming_series = 'MAT-PRE-P-.YYYY.-'
+        elif self.tax_status == 'Non Tax':
+            self.naming_series = 'MAT-PRE-NP-.YYYY.-'
+    elif self.doctype == 'Purchase Invoice':
+        if self.tax_status == 'Tax':
+            self.naming_series = 'ACC-PINV-P-.YYYY.-'
+        elif self.tax_status == 'Non Tax':
+            self.naming_series = 'ACC-PINV-NP-.YYYY.-'
+    elif self.doctype == 'Sales Invoice':
+        if self.tax_status == 'Tax':
+            self.naming_series = 'FJ-P-.YY.-.MM.-.#####'
+        elif self.tax_status == 'Non Tax':
+            self.naming_series = 'FJ-N-.YY.-.MM.-.#####'
+    elif self.doctype == 'Payment Entry':
+        if self.tax_status == 'Tax':
+            self.naming_series = 'ACC-PAY-P-.YY.-.MM.-.#####'
+        elif self.tax_status == 'Non Tax':
+            self.naming_series = 'ACC-PAY-NP-.YY.-.MM.-.#####'
+    elif self.doctype == 'Journal Entry':
+        if self.tax_status == 'Tax':
+            self.naming_series = 'ACC-JV-P-.YY.-.MM.-.#####'
+        elif self.tax_status == 'Non Tax':
+            self.naming_series = 'ACC-JV-N-.YY.-.MM.-.#####'
+
+    set_name_by_naming_series(self)
+ 
+    
+    
     

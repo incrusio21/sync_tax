@@ -1,0 +1,58 @@
+[
+ {
+  "_liked_by": "[\"Administrator\"]",
+  "docstatus": 0,
+  "doctype": "Client Script",
+  "dt": "Journal Entry",
+  "enabled": 1,
+  "modified": "2023-12-23 12:39:03.506071",
+  "name": "Journal Entry-Client",
+  "parent": null,
+  "parentfield": null,
+  "parenttype": null,
+  "script": "// frappe.ui.form.on('Journal Entry', {\r\n//     refresh(frm) {\r\n//         // if (!cur_frm.doc.finance_book) {\r\n//         //     let date = new Date();\r\n//         //         let year = date.getFullYear();\r\n//         //         console.log(cur_frm.doc.company)\r\n//         //         cur_frm.add_fetch('company','default_finance_book','finance_book')\r\n//         //    // cur_frm.set_value(\"finance_book\", year)\r\n//         // }\r\n//         if (frm.doc.__islocal != 1) {\r\n//             console.log('test');\r\n//             frm.set_df_property('tax_status', 'read_only', 1);\r\n//         }\r\n//     },\r\n//     onload: function (frm) {\r\n//         if (cur_frm.doc.amended_from) {\r\n//             frm.set_df_property('tax_status', 'read_only', 1);\r\n//         }\r\n//     },\r\n//     tax_status: function (frm) {\r\n//         if (frm.doc.__islocal) {\r\n//             if (frm.doc.tax_status == \"Tax\") {\r\n//                 frm.set_value('naming_series', 'ACC-JV-P-.YY.-.MM.-.#####');\r\n//             }\r\n//             else if (frm.doc.tax_status == \"Non Tax\") {\r\n//                 frm.set_value('naming_series', 'ACC-JV-N-.YY.-.MM.-.#####');\r\n//             }\r\n//             else {\r\n//                 frm.set_value('naming_series', 'ACC-JV-.YY.-.MM.-.#####');\r\n//             }\r\n//         }\r\n//     }\r\n// })\r\n\r\nfrappe.ui.form.on('Journal Entry Account', {\r\n    party(frm, cdt, cdn) {\r\n        refresh_party_name_accounts(frm);\r\n    }\r\n});\r\n\r\nfunction refresh_party_name_accounts(frm) {\r\n    $.each(frm.doc.accounts, function (i, d) {\r\n        if (d.party_type && d.party) {\r\n            var field_name = \"\"\r\n            if (d.party_type == \"Customer\") {\r\n                field_name = 'customer_name';\r\n            }\r\n            else if (d.party_type == \"Employee\") {\r\n                field_name = 'employee_name';\r\n            }\r\n            else if (d.party_type == \"Member\") {\r\n                field_name = 'member_name';\r\n            }\r\n            else if (d.party_type == \"Shareholder\") {\r\n                field_name = 'name';\r\n            }\r\n            else if (d.party_type == \"Supplier\") {\r\n                field_name = 'supplier_name';\r\n            }\r\n\r\n            var namex = frappe.db.get_value(d.party_type, d.party, field_name);\r\n            namex.then(data => {\r\n                var outputname = \"\"\r\n                if (d.party_type == \"Customer\") {\r\n                    outputname = data.message.customer_name;\r\n                }\r\n                else if (d.party_type == \"Employee\") {\r\n                    outputname = data.message.employee_name;\r\n                }\r\n                else if (d.party_type == \"Member\") {\r\n                    outputname = data.message.member_name;\r\n                }\r\n                else if (d.party_type == \"Shareholder\") {\r\n                    outputname = data.message.name;\r\n                }\r\n                else if (d.party_type == \"Supplier\") {\r\n                    outputname = data.message.supplier_name;\r\n                }\r\n                frappe.model.set_value(d.doctype, d.name, 'party_name', outputname);\r\n            });\r\n\r\n            frm.refresh();\r\n        }\r\n    });\r\n}",
+  "view": "Form"
+ },
+ {
+  "_liked_by": "[\"Administrator\"]",
+  "docstatus": 0,
+  "doctype": "Client Script",
+  "dt": "Material Request",
+  "enabled": 1,
+  "modified": "2023-12-23 10:27:42.061476",
+  "name": "Material Request-Form",
+  "parent": null,
+  "parentfield": null,
+  "parenttype": null,
+  "script": "frappe.ui.form.on('Material Request', {\r\n  refresh(frm) {\r\n      // your code here\r\n  }\r\n})\r\n\r\n// ISSUE AMMOUNT TIDAK BERUBAH KETIKA QTY DIGANTI (YANG TERJADI TANPA CLIENT SCRIPT INI AMOUNT = RATE, SEHARUSNYA AMOUNT = RATE * QTY)\r\nfrappe.ui.form.on('Material Request Item', {\r\n    qty(frm, cdt, cdn) {\r\n       var child = locals[cdt][cdn];\r\n        var qty = child.qty;\r\n        var rate = child.rate;\r\n        var amount = qty * rate;\r\n        frappe.model.set_value(cdt, cdn, 'amount', amount);\r\n    }\r\n});",
+  "view": "Form"
+ },
+ {
+  "_liked_by": "[\"Administrator\"]",
+  "docstatus": 0,
+  "doctype": "Client Script",
+  "dt": "Stock Entry",
+  "enabled": 1,
+  "modified": "2023-12-23 11:26:57.035207",
+  "name": "Stock Entry-Form",
+  "parent": null,
+  "parentfield": null,
+  "parenttype": null,
+  "script": "frappe.ui.form.on('Stock Entry', {\r\n\trefresh(frm) {\r\n\t\t// your code here\r\n\t},\r\n})",
+  "view": "Form"
+ },
+ {
+  "_liked_by": "[\"Administrator\"]",
+  "docstatus": 0,
+  "doctype": "Client Script",
+  "dt": "Purchase Invoice",
+  "enabled": 0,
+  "modified": "2023-12-23 11:54:22.489866",
+  "name": "Purchase Invoice-Form",
+  "parent": null,
+  "parentfield": null,
+  "parenttype": null,
+  "script": "frappe.ui.form.on('Purchase Invoice', {\r\n\trefresh(frm) {\r\n\t\t// your code here\r\n         if(cur_frm.doc.jenis_transaksi && cur_frm.doc.__islocal){\r\n            if (cur_frm.doc.jenis_transaksi == 'PPN') {\r\n                console.log(\"xxx\")\r\n                cur_frm.set_value('naming_series', 'ACC-PINV-P-.YYYY.-');\r\n                cur_frm.set_value('tax_status', 'Tax');\r\n                cur_frm.refresh_fields(\"naming_series\")\r\n                cur_frm.refresh_fields(\"tax_status\")\r\n            } \r\n            else if(cur_frm.doc.jenis_transaksi == 'Non PPN'){\r\n                cur_frm.set_value('naming_series', 'ACC-PINV-NP-.YYYY.-');\r\n                cur_frm.set_value('tax_status', 'Non Tax');\r\n                cur_frm.refresh_fields(\"naming_series\")\r\n                cur_frm.refresh_fields(\"tax_status\")\r\n            }\r\n            else{\r\n                cur_frm.set_value('naming_series', 'ACC-PINV-NP-.YYYY.-');\r\n                cur_frm.set_value('tax_status', '');\r\n                cur_frm.refresh_fields(\"naming_series\")\r\n                cur_frm.refresh_fields(\"tax_status\")\r\n            }   \r\n        }\r\n\t},\r\n\tonload: function(frm) {\r\n        if(cur_frm.doc.amended_from){\r\n            frm.set_df_property('jenis_transaksi', 'read_only', 1);\r\n            frm.set_df_property('tax_status', 'read_only', 1);\r\n        }\r\n    },\r\n    tax_status: function(frm) {\r\n\t    if(cur_frm.doc.__islocal){\r\n\t        if (frm.doc.tax_status == \"Tax\") {\r\n                frm.set_value('naming_series', 'ACC-PINV-P-.YYYY.-');\r\n                frm.set_value('jenis_transaksi', 'PPN');\r\n            } \r\n            else if(frm.doc.tax_status == \"Non Tax\"){\r\n                frm.set_value('naming_series', 'ACC-PINV-NP-.YYYY.-');\r\n                frm.set_value('jenis_transaksi', 'Non PPN');\r\n            }\r\n            else{\r\n                frm.set_value('naming_series', 'ACC-PINV-NP-.YYYY.-');\r\n                frm.set_value('jenis_transaksi', '');\r\n            }   \r\n\t    }\r\n    },\r\n    jenis_transaksi: function(frm) {\r\n        if(cur_frm.doc.jenis_transaksi && cur_frm.doc.__islocal){\r\n            if (cur_frm.doc.jenis_transaksi == 'PPN') {\r\n                console.log(\"xxx\")\r\n                cur_frm.set_value('naming_series', 'ACC-PINV-P-.YYYY.-');\r\n                cur_frm.set_value('tax_status', 'Tax');\r\n                cur_frm.refresh_fields(\"naming_series\")\r\n                cur_frm.refresh_fields(\"tax_status\")\r\n            } \r\n            else if(cur_frm.doc.jenis_transaksi == 'Non PPN'){\r\n                cur_frm.set_value('naming_series', 'ACC-PINV-NP-.YYYY.-');\r\n                cur_frm.set_value('tax_status', 'Non Tax');\r\n                cur_frm.refresh_fields(\"naming_series\")\r\n                cur_frm.refresh_fields(\"tax_status\")\r\n            }\r\n            else{\r\n                cur_frm.set_value('naming_series', 'ACC-PINV-NP-.YYYY.-');\r\n                cur_frm.set_value('tax_status', '');\r\n                cur_frm.refresh_fields(\"naming_series\")\r\n                cur_frm.refresh_fields(\"tax_status\")\r\n            }   \r\n        }\r\n    },\r\n})",
+  "view": "Form"
+ }
+]

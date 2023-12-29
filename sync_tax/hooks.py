@@ -9,6 +9,15 @@ app_color = "grey"
 app_email = "das@gmail.com"
 app_license = "MIT"
 
+fixtures = [
+	{"dt":"Client Script",
+	"filters": [["name", "in", ["Journal Entry-Client","Purchase Invoice-Form","Stock Entry-Form","Material Request-Form"]]]
+	},
+	{"dt":"Custom Field",
+	"filters": [["name", "in", ["Material Request-tax_status","Material Request-sync_pajak_name"]]]
+	},
+]
+
 # Includes in <head>
 # ------------------
 
@@ -31,7 +40,18 @@ app_license = "MIT"
 # page_js = {"page" : "public/js/file.js"}
 
 # include js in doctype views
-# doctype_js = {"doctype" : "public/js/doctype.js"}
+doctype_js = {
+"Purchase Order" : "public/js/custom_purchase_order.js",
+"Material Request": "public/js/custom_material_request.js",
+"Sales Order": "public/js/custom_sales_order.js",
+"Delivery Note": "public/js/custom_delivery_note.js",
+"Stock Entry": "public/js/custom_stock_entry.js",
+"Purchase Receipt": "public/js/custom_purchase_receipt.js",
+"Purchase Invoice": "public/js/custom_purchase_invoice.js",
+"Sales Invoice": "public/js/custom_sales_invoice.js",
+"Payment Entry": "public/js/custom_payment_entry.js",
+"Journal Entry": "public/js/custom_journal_entry.js"
+}
 # doctype_list_js = {"doctype" : "public/js/doctype_list.js"}
 # doctype_tree_js = {"doctype" : "public/js/doctype_tree.js"}
 # doctype_calendar_js = {"doctype" : "public/js/doctype_calendar.js"}
@@ -106,6 +126,8 @@ doc_events = {
 	}, 
 	("Sales Order",'Purchase Order','Delivery Note', 'Stock Entry','Purchase Receipt', 'Purchase Invoice', 'Sales Invoice', 'Payment Entry', 'Journal Entry', 'Stock Reconciliation', 'Material Request'): {
 		"on_submit": "sync_tax.custom.sync.create_sync_log",
+		"validate": ["sync_tax.custom.sync.cek_status_pajak"],
+		"autoname": "sync_tax.custom.sync.cek_tax_status",
 		"on_cancel": "sync_tax.custom.sync.cancel_sync_log",
 		"on_trash": "sync_tax.custom.sync.delete_sync_log",
 	}
