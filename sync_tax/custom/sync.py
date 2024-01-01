@@ -36,10 +36,12 @@ def repair_gl_sle_entry(doctype, docname):
     frappe.db.commit()
 
 def create_sync_log(self, method):
+    # frappe.throw("lksadlk")
     # if self.doctype == 'Material Request':
     tanggal = self.get("transaction_date") or self.get("posting_date")
     cek = '2023-12-31'
     tanggal_objek = datetime.strptime(cek, '%Y-%m-%d').date()
+    tanggal = datetime.strptime(str(tanggal), '%Y-%m-%d').date()
     if self.doctype == 'Period Closing Voucher' and (tanggal > tanggal_objek or tanggal > tanggal_objek):
         cek_apakah_sumber = frappe.db.sql(""" SELECT * FROM `tabEvent Consumer` """)
         # frappe.msgprint(str(cek_apakah_sumber)+"tes123")
@@ -979,7 +981,8 @@ def cek_tax_status(self,method):
         elif self.tax_status == 'Non Tax':
             self.naming_series = 'ACC-JV-N-.YY.-.MM.-.#####'
 
-    set_name_by_naming_series(self)
+    if self.doctype != "Period Closing Voucher":
+        set_name_by_naming_series(self)
  
     
     

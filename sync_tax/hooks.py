@@ -124,7 +124,7 @@ doc_events = {
 	"Sync Log" :{
 		"after_insert": "sync_tax.sync_tax.doctype.sync_log.sync_log.after_insert"
 	}, 
-	("Sales Order",'Purchase Order','Delivery Note', 'Stock Entry','Purchase Receipt', 'Purchase Invoice', 'Sales Invoice', 'Payment Entry', 'Journal Entry', 'Stock Reconciliation', 'Material Request'): {
+	("Sales Order",'Purchase Order','Delivery Note', 'Stock Entry','Purchase Receipt', 'Purchase Invoice', 'Sales Invoice', 'Payment Entry', 'Journal Entry', 'Stock Reconciliation', 'Material Request','Period Closing Voucher'): {
 		"on_submit": "sync_tax.custom.sync.create_sync_log",
 		"validate": ["sync_tax.custom.sync.cek_status_pajak"],
 		"autoname": "sync_tax.custom.sync.cek_tax_status",
